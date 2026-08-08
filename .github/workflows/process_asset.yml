@@ -1,0 +1,62 @@
+name: Process AI Video Assets
+
+on:
+  push:
+    paths:
+      - 'assets/**'
+      - 'asset_database.json'
+
+jobs:
+  process-and-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Processing Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          pip install pillow
+
+      - name: Standardize Images for AI Video Engines
+        run: |
+          python -c "
+          import os, json
+          from PIL import Image
+
+          # Target specs for AI Video Generators (16:9, 1920x1080 high quality PNG)
+          TARGET_RES = (1920, 1080)
+
+          for root, dirs, files in os.walk('assets'):
+              for file in files:
+                  if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                      img_path = os.path.join(root, file)
+                      with Image.open(img_path) as img:
+                          # Convert to RGB and resize preserving aspect ratio or fill canvas
+                          img = img.convert('RGB')
+                          img.thumbnail((1920, 1080), Image.Resampling.LANCZOS)
+                          
+                          # Create background canvas (padded with black if aspect ratio differs)
+                          new_img = Image.new('RGB', TARGET_RES, (0, 0, 0))
+                          offset = ((TARGET_RES[0] - img.width) // 2, (TARGET_RES[1] - img.height) // 2)
+                          new_img.paste(img, offset)
+                          
+                          # Overwrite with optimized version
+                          new_img.save(img_path, 'PNG', quality=95)
+          print('All images standardized to 1920x1080 PNG!')
+          "
+
+      - name: Commit Processed Assets
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-processed and standardized assets for AI Video generation"
+          file_pattern: "assets/*"
