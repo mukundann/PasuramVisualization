@@ -109,7 +109,6 @@
     let REPO_NAME = '';
     let accessToken = localStorage.getItem('gh_oauth_token');
 
-    // 1. Fetch Configuration First
     window.addEventListener('DOMContentLoaded', async () => {
       try {
         const res = await fetch('config.json');
@@ -120,53 +119,69 @@
         REPO_OWNER = config.repoOwner;
         REPO_NAME = config.repoName;
 
-        handleOAuthCallback();
+        checkTokenAndCallback();
       } catch (err) {
         document.getElementById('status').innerText = 'Error loading config.json file.';
       }
     });
 
-    function handleOAuthCallback() {
-      if (accessToken) {
-        showUploadForm();
-      } else {
-        showAuthButton();
+    function checkTokenAndCallback() {
+      // 1. Check if token returned in URL hash (#access_token=...)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const tokenFromHash = hashParams.get('access_token');
+
+      if (tokenFromHash) {
+        accessToken = tokenFromHash;
+        localStorage.setItem('gh_oauth_token', accessToken);
+        // Clean hash from browser URL bar
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
+
+      // 2. Check if code returned in search params (?code=...)
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('code') && !accessToken) {
+        // Fallback prompt if OAuth app defaults to code flow
+        document.getElementById('status').innerText = 'Code received. Switched to token auth.';
+      }
+
+      updateUI();
     }
 
     function loginWithGitHub() {
       if (!CLIENT_ID) {
-        alert('Client ID not found in config.json');
+        alert('Client ID missing from config.json');
         return;
       }
-      const redirectUri = window.location.href.split('?')[0];
-      window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_repo`;
+      const redirectUri = window.location.href.split('?')[0].split('#')[0];
+      
+      // Redirect with token response type for pure client-side apps
+      window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_repo&response_type=token`;
     }
 
     function logout() {
       localStorage.removeItem('gh_oauth_token');
       accessToken = null;
-      showAuthButton();
+      updateUI();
     }
 
-    function showUploadForm() {
-      document.getElementById('authCard').style.display = 'none';
-      document.getElementById('uploadCard').style.display = 'block';
+    function updateUI() {
+      if (accessToken) {
+        document.getElementById('authCard').style.display = 'none';
+        document.getElementById('uploadCard').style.display = 'block';
+      } else {
+        document.getElementById('authCard').style.display = 'block';
+        document.getElementById('uploadCard').style.display = 'none';
+      }
     }
 
-    function showAuthButton() {
-      document.getElementById('authCard').style.display = 'block';
-      document.getElementById('uploadCard').style.display = 'none';
-    }
-
-    // 2. Submit Image to incoming/ Directory
+    // Submit File to incoming/ directory
     document.getElementById('uploadForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       const statusDiv = document.getElementById('status');
       btn.disabled = true;
       statusDiv.style.color = '#c9d1d9';
-      statusDiv.innerHTML = 'Uploading image to incoming queue...';
+      statusDiv.innerHTML = 'Uploading image to queue...';
 
       const file = document.getElementById('fileInput').files[0];
       const title = document.getElementById('title').value.trim();
@@ -205,7 +220,7 @@
           }
 
           statusDiv.style.color = '#3fb950';
-          statusDiv.innerHTML = 'Uploaded to incoming/! The GitHub Action is now processing the image and updating asset_database.json.';
+          statusDiv.innerHTML = 'Uploaded to incoming/! GitHub Action is processing and updating asset_database.json.';
           document.getElementById('uploadForm').reset();
         } catch (err) {
           statusDiv.style.color = '#f85149';
