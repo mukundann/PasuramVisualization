@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple GitHub File Uploader</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background: #0d1117; color: #c9d1d9; }
+    .card { background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 16px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: #8b949e; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #fff; box-sizing: border-box; }
+    button { background: #238636; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
+    button:disabled { background: #23863680; cursor: not-allowed; }
+    #status { margin-top: 12px; font-size: 0.9rem; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <h2>GitHub Asset Uploader</h2>
+
+  <!-- Config Section -->
+  <div class="card">
+    <div class="form-group">
+      <label for="ghOwner">GitHub Username</label>
+      <input type="text" id="ghOwner" placeholder="e.g. yourusername">
+    </div>
+    <div class="form-group">
+      <label for="ghRepo">Repository Name</label>
+      <input type="text" id="ghRepo" placeholder="e.g. asset-library">
+    </div>
+    <div class="form-group">
+      <label for="ghToken">Personal Access Token (PAT)</label>
+      <input type="password" id="ghToken" placeholder="github_pat_...">
+    </div>
+    <button onclick="saveConfig()">Save Settings</button>
+  </div>
+
+  <!-- Upload Section -->
+  <div class="card">
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="fileInput">Select Image/File</label>
+        <input type="file" id="fileInput" required>
+      </div>
+      <div class="form-group">
+        <label for="tags">Tags (comma separated)</label>
+        <input type="text" id="tags" placeholder="e.g. gopuram, temple, kaveri">
+      </div>
+      <button type="submit" id="submitBtn">Upload to GitHub</button>
+    </form>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    // Restore saved credentials from localStorage
+    document.getElementById('ghOwner').value = localStorage.getItem('gh_owner') || '';
+    document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || '';
+    document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+
+    function saveConfig() {
+      localStorage.setItem('gh_owner', document.getElementById('ghOwner').value.trim());
+      localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
+      localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
+      alert("Settings saved locally!");
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const owner = localStorage.getItem('gh_owner');
+      const repo = localStorage.getItem('gh_repo');
+      const token = localStorage.getItem('gh_token');
+      const fileInput = document.getElementById('fileInput');
+      const tags = document.getElementById('tags').value;
+      const statusDiv = document.getElementById('status');
+      const btn = document.getElementById('submitBtn');
+
+      if (!owner || !repo || !token) {
+        alert("Please complete the GitHub Configuration settings first.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      btn.disabled = true;
+      statusDiv.innerHTML = "Processing upload...";
+
+      // 1. Convert File to Base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Content = reader.result.split(',')[1];
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const filePath = `assets/${fileName}`;
+
+        try {
+          // 2. Commit the Image to the GitHub Repo via API
+          const imgRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              message: `Upload asset ${fileName} with tags: ${tags}`,
+              content: base64Content
+            })
+          });
+
+          if (!imgRes.ok) {
+            const err = await imgRes.json();
+            throw new Error(err.message || 'Failed to upload image');
+          }
+
+          statusDiv.style.color = '#3fb950';
+          statusDiv.innerHTML = `Successfully uploaded: <strong>${filePath}</strong>`;
+          document.getElementById('uploadForm').reset();
+        } catch (err) {
+          statusDiv.style.color = '#f85149';
+          statusDiv.innerHTML = `Error: ${err.message}`;
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      reader.readAsDataURL(file);
+    });
+  </script>
+
+</body>
+</html>

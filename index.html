@@ -3,130 +3,435 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple GitHub File Uploader</title>
+  <title>Srivaishnava Pasuram Canvas Builder</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background: #0d1117; color: #c9d1d9; }
-    .card { background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 16px; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: #8b949e; }
-    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #fff; box-sizing: border-box; }
-    button { background: #238636; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
-    button:disabled { background: #23863680; cursor: not-allowed; }
-    #status { margin-top: 12px; font-size: 0.9rem; word-break: break-all; }
+    :root {
+      --bg-dark: #0f141c;
+      --card-bg: #1c2430;
+      --primary: #d4af37;
+      --text: #e0e6ed;
+      --border: #303e52;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1024px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    h2, h3 {
+      color: var(--primary);
+      margin-top: 0;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    input, textarea, button, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #090c10;
+      color: var(--text);
+      box-sizing: border-box;
+      font-size: 0.9rem;
+    }
+
+    button {
+      background: var(--primary);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      padding: 10px;
+    }
+
+    button:hover {
+      background: #f1c40f;
+    }
+
+    /* Canvas Stage Area */
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    canvas {
+      border: 2px solid var(--primary);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      cursor: move;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .matches-list {
+      margin-top: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .match-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #090c10;
+      padding: 6px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+
+    .match-item img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .controls-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 960px;
+    }
   </style>
 </head>
 <body>
 
-  <h2>GitHub Asset Uploader</h2>
+<div class="app-container">
+  <!-- Left Panel: Text Inputs & Asset Matcher -->
+  <div class="panel">
+    <h2>Pasuram Studio</h2>
 
-  <!-- Config Section -->
-  <div class="card">
     <div class="form-group">
-      <label for="ghOwner">GitHub Username</label>
-      <input type="text" id="ghOwner" placeholder="e.g. yourusername">
+      <label for="ghOwner">GitHub Owner / Repo</label>
+      <div style="display: flex; gap: 6px;">
+        <input type="text" id="ghOwner" placeholder="Username" style="width: 50%;">
+        <input type="text" id="ghRepo" placeholder="Repo Name" style="width: 50%;">
+      </div>
     </div>
+
+    <button onclick="loadAssetDatabase()" style="margin-bottom: 16px; background: #27ae60; color: white;">Fetch Asset DB</button>
+
     <div class="form-group">
-      <label for="ghRepo">Repository Name</label>
-      <input type="text" id="ghRepo" placeholder="e.g. asset-library">
+      <label for="pasuramText">Pasuram Text</label>
+      <textarea id="pasuramText" rows="3" placeholder="Paste Tamil Pasuram lines here..."></textarea>
     </div>
+
     <div class="form-group">
-      <label for="ghToken">Personal Access Token (PAT)</label>
-      <input type="password" id="ghToken" placeholder="github_pat_...">
+      <label for="vyakhyanamText">Vyakhyanam (Commentary)</label>
+      <textarea id="vyakhyanamText" rows="4" placeholder="Type commentary keywords (e.g., Kaveri, Gopuram, Guha, Rama, Lotus)..."></textarea>
     </div>
-    <button onclick="saveConfig()">Save Settings</button>
+
+    <button onclick="processVyakhyanamAndBuild()">Auto-Pick Assets & Compose</button>
+
+    <h3>Matched Assets</h3>
+    <div id="matchesList" class="matches-list">
+      <small style="color: #8a99ad;">No matches generated yet.</small>
+    </div>
   </div>
 
-  <!-- Upload Section -->
-  <div class="card">
-    <form id="uploadForm">
-      <div class="form-group">
-        <label for="fileInput">Select Image/File</label>
-        <input type="file" id="fileInput" required>
-      </div>
-      <div class="form-group">
-        <label for="tags">Tags (comma separated)</label>
-        <input type="text" id="tags" placeholder="e.g. gopuram, temple, kaveri">
-      </div>
-      <button type="submit" id="submitBtn">Upload to GitHub</button>
-    </form>
-    <div id="status"></div>
+  <!-- Right Panel: Interactive Visual Canvas -->
+  <div class="canvas-container">
+    <canvas id="stageCanvas" width="960" height="540"></canvas>
+
+    <div class="controls-bar">
+      <button onclick="clearCanvas()">Clear Stage</button>
+      <button onclick="exportCanvasImage()" style="background: #2980b9; color: white;">Download Image</button>
+    </div>
   </div>
+</div>
 
-  <script>
-    // Restore saved credentials from localStorage
-    document.getElementById('ghOwner').value = localStorage.getItem('gh_owner') || '';
-    document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || '';
-    document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+<script>
+  // Canvas & Scene State
+  const canvas = document.getElementById('stageCanvas');
+  const ctx = canvas.getContext('2d');
 
-    function saveConfig() {
-      localStorage.setItem('gh_owner', document.getElementById('ghOwner').value.trim());
-      localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
-      localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
-      alert("Settings saved locally!");
+  let assetDatabase = [];
+  let sceneLayers = []; // Stores background, images, and text overlay elements
+  let selectedLayer = null;
+  let isDragging = false;
+  let startX, startY;
+
+  // Restore saved GitHub Settings
+  document.getElementById('ghOwner').value = localStorage.getItem('gh_owner') || '';
+  document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || '';
+
+  // 1. Fetch asset_database.json from GitHub Repository
+  async function loadAssetDatabase() {
+    const owner = document.getElementById('ghOwner').value.trim();
+    const repo = document.getElementById('ghRepo').value.trim();
+    
+    if (!owner || !repo) {
+      alert("Please enter GitHub Owner and Repository Name.");
+      return;
     }
 
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    localStorage.setItem('gh_owner', owner);
+    localStorage.setItem('gh_repo', repo);
 
-      const owner = localStorage.getItem('gh_owner');
-      const repo = localStorage.getItem('gh_repo');
-      const token = localStorage.getItem('gh_token');
-      const fileInput = document.getElementById('fileInput');
-      const tags = document.getElementById('tags').value;
-      const statusDiv = document.getElementById('status');
-      const btn = document.getElementById('submitBtn');
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/main/asset_database.json`;
+    
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Could not load asset_database.json");
+      assetDatabase = await res.json();
+      alert(`Loaded ${assetDatabase.length} assets from repository database!`);
+    } catch (err) {
+      alert(`Error fetching assets: ${err.message}`);
+    }
+  }
 
-      if (!owner || !repo || !token) {
-        alert("Please complete the GitHub Configuration settings first.");
-        return;
+  // 2. Scan Vyakhyanam for Asset Matches & Position Layer Assets
+  async function processVyakhyanamAndBuild() {
+    const owner = document.getElementById('ghOwner').value.trim();
+    const repo = document.getElementById('ghRepo').value.trim();
+    const pasuram = document.getElementById('pasuramText').value.trim();
+    const vyakhyanam = document.getElementById('vyakhyanamText').value.toLowerCase();
+
+    sceneLayers = []; // Reset current scene
+    const matchedAssets = [];
+    const matchesListDiv = document.getElementById('matchesList');
+    matchesListDiv.innerHTML = '';
+
+    // Score and match assets against Vyakhyanam
+    assetDatabase.forEach(asset => {
+      let score = 0;
+      const title = (asset.title || '').toLowerCase();
+      const pasuramKey = (asset.pasuramKey || '').toLowerCase();
+      const tags = asset.tags || [];
+
+      if (title && vyakhyanam.includes(title)) score += 3;
+      if (pasuramKey && vyakhyanam.includes(pasuramKey)) score += 5;
+      
+      tags.forEach(tag => {
+        if (vyakhyanam.includes(tag.toLowerCase())) score += 2;
+      });
+
+      if (score > 0) {
+        matchedAssets.push({ asset, score });
       }
-
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      btn.disabled = true;
-      statusDiv.innerHTML = "Processing upload...";
-
-      // 1. Convert File to Base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64Content = reader.result.split(',')[1];
-        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-        const filePath = `assets/${fileName}`;
-
-        try {
-          // 2. Commit the Image to the GitHub Repo via API
-          const imgRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `token ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              message: `Upload asset ${fileName} with tags: ${tags}`,
-              content: base64Content
-            })
-          });
-
-          if (!imgRes.ok) {
-            const err = await imgRes.json();
-            throw new Error(err.message || 'Failed to upload image');
-          }
-
-          statusDiv.style.color = '#3fb950';
-          statusDiv.innerHTML = `Successfully uploaded: <strong>${filePath}</strong>`;
-          document.getElementById('uploadForm').reset();
-        } catch (err) {
-          statusDiv.style.color = '#f85149';
-          statusDiv.innerHTML = `Error: ${err.message}`;
-        } finally {
-          btn.disabled = false;
-        }
-      };
-
-      reader.readAsDataURL(file);
     });
-  </script>
+
+    // Sort by relevance score
+    matchedAssets.sort((a, b) => b.score - a.score);
+
+    if (matchedAssets.length === 0 && assetDatabase.length > 0) {
+      // Fallback: Pick top 2 items from DB if no keyword matches found
+      matchedAssets.push({ asset: assetDatabase[0], score: 1 });
+      if (assetDatabase[1]) matchedAssets.push({ asset: assetDatabase[1], score: 1 });
+    }
+
+    // Render matches to list sidebar
+    matchedAssets.forEach(item => {
+      const imgUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${item.asset.path}`;
+      const div = document.createElement('div');
+      div.className = 'match-item';
+      div.innerHTML = `
+        <img src="${imgUrl}" crossorigin="anonymous">
+        <div>
+          <strong>${item.asset.title}</strong><br>
+          <small>Score: ${item.score} | ${item.asset.category}</small>
+        </div>
+      `;
+      matchesListDiv.appendChild(div);
+    });
+
+    // 3. Load Image Layers onto Canvas
+    let offsetX = 50;
+    for (let i = 0; i < matchedAssets.length; i++) {
+      const item = matchedAssets[i].asset;
+      const imgUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${item.path}`;
+      
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = imgUrl;
+        img.onload = () => {
+          sceneLayers.push({
+            type: 'image',
+            img: img,
+            x: offsetX,
+            y: 80,
+            width: 280,
+            height: 280 * (img.height / img.width),
+            title: item.title
+          });
+          offsetX += 300;
+          resolve();
+        };
+        img.onerror = () => resolve(); // skip failed images gracefully
+      });
+    }
+
+    // 4. Add Pasuram Text Layer Overlay
+    if (pasuram) {
+      sceneLayers.push({
+        type: 'text',
+        text: pasuram,
+        x: canvas.width / 2,
+        y: canvas.height - 70,
+        color: '#f1c40f',
+        fontSize: 22,
+        align: 'center'
+      });
+    }
+
+    renderCanvas();
+  }
+
+  // 5. Draw Canvas Scene
+  function renderCanvas() {
+    // Clear Stage
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Subtle Background Border/Grid
+    ctx.strokeStyle = '#1a2332';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+    // Render Layers
+    sceneLayers.forEach(layer => {
+      if (layer.type === 'image') {
+        ctx.drawImage(layer.img, layer.x, layer.y, layer.width, layer.height);
+        
+        // Highlight selected image boundary
+        if (layer === selectedLayer) {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(layer.x, layer.y, layer.width, layer.height);
+        }
+      } else if (layer.type === 'text') {
+        ctx.font = `bold ${layer.fontSize}px 'Segoe UI', Arial, sans-serif`;
+        ctx.fillStyle = layer.color;
+        ctx.textAlign = layer.align || 'center';
+
+        // Draw Text Shadow for Legibility
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 6;
+
+        // Wrap multi-line Pasuram text
+        const lines = layer.text.split('\n');
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, layer.x, layer.y + (idx * (layer.fontSize + 6)));
+        });
+
+        ctx.shadowBlur = 0; // Reset shadow
+
+        if (layer === selectedLayer) {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(layer.x - 150, layer.y - 20, 300, (lines.length * 30) + 10);
+        }
+      }
+    });
+  }
+
+  // Mouse Interactivity: Drag and Drop Layers
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    selectedLayer = null;
+
+    // Check hit test in reverse (top-most layer first)
+    for (let i = sceneLayers.length - 1; i >= 0; i--) {
+      const layer = sceneLayers[i];
+      if (layer.type === 'image') {
+        if (mouseX >= layer.x && mouseX <= layer.x + layer.width &&
+            mouseY >= layer.y && mouseY <= layer.y + layer.height) {
+          selectedLayer = layer;
+          isDragging = true;
+          startX = mouseX - layer.x;
+          startY = mouseY - layer.y;
+          break;
+        }
+      } else if (layer.type === 'text') {
+        if (Math.abs(mouseX - layer.x) < 200 && Math.abs(mouseY - layer.y) < 50) {
+          selectedLayer = layer;
+          isDragging = true;
+          startX = mouseX - layer.x;
+          startY = mouseY - layer.y;
+          break;
+        }
+      }
+    }
+    renderCanvas();
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!isDragging || !selectedLayer) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    selectedLayer.x = mouseX - startX;
+    selectedLayer.y = mouseY - startY;
+    renderCanvas();
+  });
+
+  canvas.addEventListener('mouseup', () => isDragging = false);
+
+  function clearCanvas() {
+    sceneLayers = [];
+    selectedLayer = null;
+    renderCanvas();
+  }
+
+  function exportCanvasImage() {
+    const link = document.createElement('a');
+    link.download = `pasuram_composition_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  // Initialize Canvas State
+  renderCanvas();
+</script>
 
 </body>
 </html>
