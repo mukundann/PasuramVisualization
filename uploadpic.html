@@ -3,118 +3,258 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple GitHub File Uploader</title>
+  <title>Pasuram Asset Studio - Mobile Uploader</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; background: #0d1117; color: #c9d1d9; }
-    .card { background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 16px; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-size: 0.85rem; margin-bottom: 4px; color: #8b949e; }
-    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #fff; box-sizing: border-box; }
-    button { background: #238636; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
-    button:disabled { background: #23863680; cursor: not-allowed; }
-    #status { margin-top: 12px; font-size: 0.9rem; word-break: break-all; }
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --primary: #238636;
+      --gold: #d4af37;
+      --text: #c9d1d9;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .form-group { margin-bottom: 14px; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      color: #8b949e;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #0d1117;
+      color: #fff;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .user-code {
+      font-size: 1.8rem;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: var(--gold);
+      text-align: center;
+      margin: 12px 0;
+      user-select: all;
+    }
+    .status { margin-top: 12px; font-size: 0.9rem; word-break: break-all; }
   </style>
 </head>
 <body>
 
-  <h2>GitHub Asset Uploader</h2>
+  <h2 style="color: var(--gold); text-align: center; margin-top: 0;">Pasuram Asset Uploader</h2>
 
-  <!-- Config Section -->
-  <div class="card">
-    <div class="form-group">
-      <label for="ghOwner">GitHub Username</label>
-      <input type="text" id="ghOwner" placeholder="e.g. yourusername">
+  <!-- Auth Card -->
+  <div class="card" id="authCard">
+    <button onclick="startDeviceFlow()">Sign In with GitHub</button>
+    <div id="devicePrompt" style="display: none; margin-top: 16px; text-align: center;">
+      <p style="margin: 0; font-size: 0.9rem;">Copy this code:</p>
+      <div id="userCode" class="user-code">----</div>
+      <p style="font-size: 0.85rem; color: #8b949e;">Then open the link below and paste the code:</p>
+      <a id="verifyLink" href="#" target="_blank" style="color: #58a6ff; font-weight: bold;">github.com/login/device</a>
+      <p style="font-size: 0.8rem; color: #8b949e; margin-top: 12px;">Waiting for authorization...</p>
     </div>
-    <div class="form-group">
-      <label for="ghRepo">Repository Name</label>
-      <input type="text" id="ghRepo" placeholder="e.g. asset-library">
-    </div>
-    <div class="form-group">
-      <label for="ghToken">Personal Access Token (PAT)</label>
-      <input type="password" id="ghToken" placeholder="github_pat_...">
-    </div>
-    <button onclick="saveConfig()">Save Settings</button>
   </div>
 
-  <!-- Upload Section -->
-  <div class="card">
+  <!-- Upload Form Card -->
+  <div class="card" id="uploadCard" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <span style="font-size: 0.85rem; color: #3fb950; font-weight: bold;">✓ Signed In</span>
+      <button onclick="logout()" style="width: auto; padding: 6px 12px; font-size: 0.8rem; background: #da3633; margin: 0;">Logout</button>
+    </div>
+
     <form id="uploadForm">
       <div class="form-group">
-        <label for="fileInput">Select Image/File</label>
-        <input type="file" id="fileInput" required>
+        <label for="title">Asset Title</label>
+        <input type="text" id="title" placeholder="e.g. Srirangam Rajagopuram" required>
       </div>
+
+      <div class="form-group">
+        <label for="pasuramKey">Pasuram ID / Key</label>
+        <input type="text" id="pasuramKey" placeholder="e.g. PTM_5.8_1">
+      </div>
+
       <div class="form-group">
         <label for="tags">Tags (comma separated)</label>
-        <input type="text" id="tags" placeholder="e.g. gopuram, temple, kaveri">
+        <input type="text" id="tags" placeholder="e.g. gopuram, srirangam, kaveri" required>
       </div>
-      <button type="submit" id="submitBtn">Upload to GitHub</button>
+
+      <div class="form-group">
+        <label for="fileInput">Select Image</label>
+        <input type="file" id="fileInput" accept="image/*" required>
+      </div>
+
+      <button type="submit" id="submitBtn">Upload & Process Asset</button>
     </form>
-    <div id="status"></div>
+    <div id="status" class="status"></div>
   </div>
 
   <script>
-    // Restore saved credentials from localStorage
-    document.getElementById('ghOwner').value = localStorage.getItem('gh_owner') || '';
-    document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || '';
-    document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+    // --- CONFIGURATION ---
+    const CLIENT_ID = 'YOUR_GITHUB_OAUTH_CLIENT_ID'; // <--- Paste Client ID here
+    const REPO_OWNER = 'mukundann';
+    const REPO_NAME = 'PasuramVisualization';
 
-    function saveConfig() {
-      localStorage.setItem('gh_owner', document.getElementById('ghOwner').value.trim());
-      localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
-      localStorage.setItem('gh_token', document.getElementById('ghToken').value.trim());
-      alert("Settings saved locally!");
+    let accessToken = localStorage.getItem('gh_device_token');
+
+    window.addEventListener('DOMContentLoaded', updateUI);
+
+    function updateUI() {
+      if (accessToken) {
+        document.getElementById('authCard').style.display = 'none';
+        document.getElementById('uploadCard').style.display = 'block';
+      } else {
+        document.getElementById('authCard').style.display = 'block';
+        document.getElementById('uploadCard').style.display = 'none';
+      }
     }
 
+    // Step 1: Initiate Device Code Flow
+    async function startDeviceFlow() {
+      try {
+        const res = await fetch('https://github.com/login/device/code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            client_id: CLIENT_ID,
+            scope: 'public_repo'
+          })
+        });
+
+        const data = await res.json();
+        if (data.user_code) {
+          document.getElementById('userCode').innerText = data.user_code;
+          document.getElementById('verifyLink').href = data.verification_uri;
+          document.getElementById('devicePrompt').style.display = 'block';
+
+          // Poll GitHub until collaborator approves
+          pollForToken(data.device_code, data.interval || 5);
+        } else {
+          alert('Error starting device auth: ' + (data.error_description || 'Check Client ID'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    }
+
+    // Step 2: Poll for completion
+    async function pollForToken(deviceCode, interval) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              client_id: Ov23li1HfEGHbDtJK1eQ,
+              device_code: deviceCode,
+              grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+            })
+          });
+
+          const data = await res.json();
+          if (data.access_token) {
+            clearInterval(pollInterval);
+            accessToken = data.access_token;
+            localStorage.setItem('gh_device_token', accessToken);
+            updateUI();
+          } else if (data.error !== 'authorization_pending') {
+            clearInterval(pollInterval);
+            alert('Authorization failed: ' + data.error);
+          }
+        } catch (e) {
+          // ignore transient errors while polling
+        }
+      }, interval * 1000);
+    }
+
+    function logout() {
+      localStorage.removeItem('gh_device_token');
+      accessToken = null;
+      document.getElementById('devicePrompt').style.display = 'none';
+      updateUI();
+    }
+
+    // Step 3: Push Image to incoming/ to Trigger Action
     document.getElementById('uploadForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      const owner = localStorage.getItem('gh_owner');
-      const repo = localStorage.getItem('gh_repo');
-      const token = localStorage.getItem('gh_token');
-      const fileInput = document.getElementById('fileInput');
-      const tags = document.getElementById('tags').value;
-      const statusDiv = document.getElementById('status');
       const btn = document.getElementById('submitBtn');
-
-      if (!owner || !repo || !token) {
-        alert("Please complete the GitHub Configuration settings first.");
-        return;
-      }
-
-      const file = fileInput.files[0];
-      if (!file) return;
-
+      const statusDiv = document.getElementById('status');
       btn.disabled = true;
-      statusDiv.innerHTML = "Processing upload...";
+      statusDiv.style.color = '#c9d1d9';
+      statusDiv.innerHTML = 'Uploading image to incoming queue...';
 
-      // 1. Convert File to Base64
+      const file = document.getElementById('fileInput').files[0];
+      const title = document.getElementById('title').value.trim();
+      const pasuramKey = document.getElementById('pasuramKey').value.trim();
+      const tags = document.getElementById('tags').value.trim();
+
       const reader = new FileReader();
       reader.onload = async () => {
         const base64Content = reader.result.split(',')[1];
-        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-        const filePath = `assets/${fileName}`;
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filePath = `incoming/${Date.now()}_${cleanFileName}`;
+
+        const commitMessage = JSON.stringify({
+          type: "ASSET_UPLOAD",
+          title: title,
+          pasuramKey: pasuramKey,
+          tags: tags.split(',').map(t => t.trim().toLowerCase()).filter(t => t)
+        });
 
         try {
-          // 2. Commit the Image to the GitHub Repo via API
-          const imgRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+          const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`, {
             method: 'PUT',
             headers: {
-              'Authorization': `token ${token}`,
+              'Authorization': `token ${accessToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              message: `Upload asset ${fileName} with tags: ${tags}`,
+              message: commitMessage,
               content: base64Content
             })
           });
 
-          if (!imgRes.ok) {
-            const err = await imgRes.json();
-            throw new Error(err.message || 'Failed to upload image');
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.message || 'Upload failed');
           }
 
           statusDiv.style.color = '#3fb950';
-          statusDiv.innerHTML = `Successfully uploaded: <strong>${filePath}</strong>`;
+          statusDiv.innerHTML = 'Uploaded to incoming/! GitHub Action will process the asset and update asset_database.json.';
           document.getElementById('uploadForm').reset();
         } catch (err) {
           statusDiv.style.color = '#f85149';
@@ -127,6 +267,5 @@
       reader.readAsDataURL(file);
     });
   </script>
-
 </body>
 </html>
