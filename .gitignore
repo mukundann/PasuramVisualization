@@ -1,0 +1,10 @@
+# Visual Studio Code local settings and cache
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local history plugin (if you use it)
+.history/
